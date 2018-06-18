@@ -1,7 +1,15 @@
 package com.artandstones;
 
+import java.util.List;
+import java.util.Optional;
+
+import javax.sql.DataSource;
+
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -10,6 +18,10 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.artandstones.dao.MarbelDetailsRepository;
+import com.artandstones.dao.UsersRepository;
+import com.artandstones.model.MarbelDetails;
+import com.artandstones.model.Users;
 import com.artandstones.request.GetMarbelDetailsRequest;
 import com.artandstones.request.LoginRequest;
 import com.artandstones.request.LogoutRequest;
@@ -23,7 +35,15 @@ import com.artandstones.util.ResponseStatus;
 @RestController
 @RequestMapping(path = { "aas/" })
 @CrossOrigin
+@EnableJpaRepositories("com.artandstones.dao")
+@EntityScan("com.artandstones.model")
 public class ArtAndStonesBackend {
+	
+	@Autowired
+	MarbelDetailsRepository marbelDetailsRepository;
+	
+	@Autowired
+	UsersRepository usersRepository;
 
 	public static void main(String[] args) {
 		SpringApplication.run(ArtAndStonesBackend.class, args);
@@ -40,8 +60,9 @@ public class ArtAndStonesBackend {
 	@ResponseBody
 	public LoginResponse ValidateUser(@RequestBody LoginRequest loginRequest) {
 		LoginResponse loginResponse = new LoginResponse();
-		if (loginRequest.getCommonRequest().getUserName().equals("Admin")
-				&& loginRequest.getCommonRequest().getPassWord().equals("Passowrd")) {
+		Optional<Users> user = usersRepository.findById(loginRequest.getCommonRequest().getUserName());
+		System.out.println(user);
+		if (loginRequest.getCommonRequest().getPassWord().equals(user.get().getPassword())) {
 			loginResponse.setAuthenticated(true);
 			loginResponse.setCommonResponse(new CommonResponse("200", ResponseStatus.SUCCESS));
 		} else {
@@ -71,6 +92,8 @@ public class ArtAndStonesBackend {
 			MediaType.APPLICATION_JSON_VALUE, MediaType.APPLICATION_XML_VALUE })
 	@ResponseBody
 	public GetMarbelDetailsResponse getMarbelDetails(@RequestBody GetMarbelDetailsRequest getMarbelDetailsRequest) {
+		List<MarbelDetails> marbelDetails= (List<MarbelDetails>) marbelDetailsRepository.findAll();
+		System.out.println(marbelDetails);
 		GetMarbelDetailsResponse getMarbelDetailsResponse = new GetMarbelDetailsResponse();
 		LoginRequest loginRequest = new LoginRequest();
 		loginRequest.setCommonRequest(getMarbelDetailsRequest.getCommonRequest());
