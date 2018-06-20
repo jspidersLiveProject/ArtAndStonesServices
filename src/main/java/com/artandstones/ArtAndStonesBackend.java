@@ -25,6 +25,7 @@ import com.artandstones.model.Users;
 import com.artandstones.request.CreateMarbelRequest;
 import com.artandstones.request.DeleteMarbelRequest;
 import com.artandstones.request.GetMarbelDetailsRequest;
+import com.artandstones.request.GetMarblePriceRequest;
 import com.artandstones.request.LoginRequest;
 import com.artandstones.request.LogoutRequest;
 import com.artandstones.request.UpdateMarbelRequest;
@@ -32,6 +33,7 @@ import com.artandstones.response.CommonResponse;
 import com.artandstones.response.CreateMarbelResponse;
 import com.artandstones.response.DeleteMarbelResponse;
 import com.artandstones.response.GetMarbelDetailsResponse;
+import com.artandstones.response.GetMarblePriceResponse;
 import com.artandstones.response.LoginResponse;
 import com.artandstones.response.LogoutResponse;
 import com.artandstones.response.UpdateMarbelResponse;
@@ -66,9 +68,8 @@ public class ArtAndStonesBackend {
 	@ResponseBody
 	public LoginResponse ValidateUser(@RequestBody LoginRequest loginRequest) {
 		LoginResponse loginResponse = new LoginResponse();
-		Optional<Users> user = usersRepository.findById(loginRequest.getCommonRequest().getUserName());
-		System.out.println(user);
-		if (loginRequest.getCommonRequest().getPassWord().equals(user.get().getPassword())) {
+		String password = usersRepository.getPasswordByUsername(loginRequest.getCommonRequest().getUserName());
+		if (loginRequest.getCommonRequest().getPassWord().equals(password)) {
 			loginResponse.setAuthenticated(true);
 			loginResponse.setCommonResponse(new CommonResponse("200", ResponseStatus.SUCCESS));
 		} else {
@@ -93,6 +94,36 @@ public class ArtAndStonesBackend {
 
 		return logoutResponse;
 	}
+	
+	@RequestMapping(value = "/getMarblePrice", method = RequestMethod.POST, produces = { MediaType.APPLICATION_JSON_VALUE,
+			MediaType.APPLICATION_XML_VALUE })
+	@ResponseBody
+	public GetMarblePriceResponse getMarblePrice(@RequestBody GetMarblePriceRequest getMarblePriceRequest) {
+		GetMarblePriceResponse getMarblePriceResponse = new GetMarblePriceResponse();
+		if (getMarblePriceRequest.getCommonRequest().getUserName().equals("Admin")) {
+			String password = usersRepository.getPasswordByUsername(getMarblePriceRequest.getCommonRequest().getUserName());
+			if (getMarblePriceRequest.getCommonRequest().getPassWord().equals(password)) {
+				String price = marbelDetailsRepository.getMarblePriceByType(getMarblePriceRequest.getType());
+				if(price == null) {
+					getMarblePriceResponse.setMessage("Marbel Type Not Found");
+					getMarblePriceResponse.setCommonResponse(new CommonResponse("790", ResponseStatus.FAILED));
+				} else {
+					getMarblePriceResponse.setPrice(price);
+					getMarblePriceResponse.setMessage("Price Found");
+					getMarblePriceResponse.setCommonResponse(new CommonResponse("200", ResponseStatus.SUCCESS));
+				}
+			} else {
+				getMarblePriceResponse.setMessage("Your Password is not correct");
+				getMarblePriceResponse.setCommonResponse(new CommonResponse("710", ResponseStatus.FAILED));
+			}
+		} else {
+			getMarblePriceResponse.setMessage("You Are not Authorized to Update A Marbel");
+			getMarblePriceResponse.setCommonResponse(new CommonResponse("720", ResponseStatus.FAILED));
+		}
+		return getMarblePriceResponse;
+	}
+	
+	
 	
 	@RequestMapping(value = "/updateMarbel", method = RequestMethod.POST, produces = { MediaType.APPLICATION_JSON_VALUE,
 			MediaType.APPLICATION_XML_VALUE })
@@ -220,5 +251,7 @@ public class ArtAndStonesBackend {
 
 		return getMarbelDetailsResponse;
 	}
+	
+	
 
 }
